@@ -1,0 +1,29 @@
+# Use SeuratDisk to write anndata .h5ad file from Seurat Object
+library(Seurat)
+library(SeuratDisk)
+
+path <- "path-to-Seurat-object.RDS"
+seurat_object <- readRDS(path)
+
+# Make sure that Seurat-object is up-to-date
+Seurat::UpdateSeuratObject(seurat_object)
+
+# Make raw counts to default
+DefaultAssay(object) <- "RNA"
+
+# Additional assays will cause problems, overwrite + export separately
+other_assays = c()
+for (other_assay in other_assays){
+  if (other_assay %in% Assays(object)){
+      object[["other_assay"]] <- NULL
+  }
+}
+
+slot(object$SCT@SCTModel.list[[1]], 'median_umi') = median(object$SCT@SCTModel.list[[1]]@cell.attributes$umi)
+
+# Use Seurat Disk and write to h5Seurat
+export_path <- "path-to-export.h5Seurat"
+SeuratDisk::SaveH5Seurat(object, filename=path, overwrite = TRUE, assay="RNA")
+
+# Convert to h5ad file
+SeuratDisk::Convert(path, dest = "h5ad", overwrite=TRUE)
